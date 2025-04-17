@@ -5,6 +5,8 @@ import Stats from 'stats.js'
 
 const canvas = document.querySelector('#c')
 const renderer = new THREE.WebGLRenderer({antialias:true, canvas})
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFShadowMap
 
 const fov = 40
 const aspect = window.innerWidth / window.innerHeight
@@ -57,6 +59,7 @@ solarSystem.add(sunMesh)
 objects.push(sunMesh)
 
 const sunLight = new THREE.PointLight(0xFFFFFF, 100.0, 0, 1)
+sunLight.castShadow = true
 sunMesh.add(sunLight)
 
 const earthOrbit = new THREE.Object3D()
@@ -82,6 +85,8 @@ const earthMaterial = new THREE.MeshPhongMaterial({
   emissive: 0x102030,
 });
 const earthMesh = new THREE.Mesh(sphereGeometry, earthMaterial)
+earthMesh.castShadow = true
+earthMesh.receiveShadow = true
 earthOrbit.add(earthMesh)
 objects.push(earthMesh)
 
@@ -102,6 +107,8 @@ const moonMaterial = new THREE.MeshPhongMaterial({
   shininess: 5,
 })
 const moonMesh = new THREE.Mesh(sphereGeometry, moonMaterial)
+moonMesh.receiveShadow = true
+moonMesh.castShadow = true
 moonMesh.scale.set(.5, .5, .5)
 moonOrbit.add(moonMesh)
 objects.push(moonMesh)
@@ -115,7 +122,7 @@ function animate() {
 
   stats.begin()
   objects.forEach( ( obj ) => {
-		obj.rotation.y += 0.001
+		obj.rotation.y += 0.003
 	} );
 
   controls.update()
