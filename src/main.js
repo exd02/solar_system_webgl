@@ -50,7 +50,7 @@ const loader = new THREE.TextureLoader()
 
 const sunTexture = loader.load("textures/sun/sun_map.jpg")
 sunTexture.colorSpace = THREE.SRGBColorSpace
-const sunMaterial = new THREE.MeshPhongMaterial({
+const sunMaterial = new THREE.MeshBasicMaterial({
   map: sunTexture,
 })
 const sunMesh = new THREE.Mesh(sphereGeometry, sunMaterial)
