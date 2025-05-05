@@ -2,12 +2,16 @@ import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/Addons.js'
 import Stats from 'stats.js'
+import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js'
 
 const canvas = document.querySelector('#c')
 const renderer = new THREE.WebGLRenderer({antialias:true, canvas})
+
+// shadow settings
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFShadowMap
 
+// camera settings
 const fov = 40
 const aspect = window.innerWidth / window.innerHeight
 const near = 0.1
@@ -17,16 +21,18 @@ camera.position.set(0,30,-30)
 camera.lookAt(0,0,0)
 
 const scene = new THREE.Scene()
-{
-  const color = 0xFFFFFF
-  const intensity = .1
-  const ambientLight = new THREE.AmbientLight(color, intensity)
-  scene.add(ambientLight)
-}
+const textureLoader = new THREE.TextureLoader()
+
+// add general lightning
+const ambientLightColor = 0xFFFFFF
+const ambientLightIntensity = .1
+const ambientLight = new THREE.AmbientLight(ambientLightColor, ambientLightIntensity)
+scene.add(ambientLight)
 
 renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
+// control to move camera around
 const controls = new OrbitControls(camera, renderer.domElement)
 controls.target.set(0,0,0)
 controls.enableDamping = true
@@ -34,21 +40,19 @@ controls.minDistance = 20
 controls.maxDistance = 500
 controls.enablePan = true
 
+// array of objects to get rotated in the animation
 const objects = []
 
-const radius = 1
-const wSegments = 32
-const hSegments = 32
-// use sphere geometry and adjust with scale after
-const sphereGeometry = new THREE.SphereGeometry(radius, wSegments, hSegments)
+const sphereRadius = 1
+const sphereWSegments = 32
+const sphereHSegments = 32
+const sphereGeometry = new THREE.SphereGeometry(sphereRadius, sphereWSegments, sphereHSegments)
 
+// sun and solar system
 const solarSystem = new THREE.Object3D()
 scene.add(solarSystem)
 objects.push(solarSystem)
-
-const loader = new THREE.TextureLoader()
-
-const sunTexture = loader.load("textures/sun/sun_map.jpg")
+const sunTexture = textureLoader.load("textures/sun/sun_map.jpg")
 sunTexture.colorSpace = THREE.SRGBColorSpace
 const sunMaterial = new THREE.MeshBasicMaterial({
   map: sunTexture,
@@ -58,6 +62,7 @@ sunMesh.scale.set(5,5,5)
 solarSystem.add(sunMesh)
 objects.push(sunMesh)
 
+// point light of the sun
 const sunLight = new THREE.PointLight(0xFFFFFF, 100.0, 0, 1)
 sunLight.castShadow = true
 sunMesh.add(sunLight)
@@ -77,7 +82,7 @@ flatEarthOrbit.add(flatEarthGroup)
 objects.push(flatEarthGroup)
 
 const flatEarthGeometry = new THREE.CylinderGeometry(1, 1, 0.1, 64, 1, false)
-const flatEarthTexture = loader.load('textures/earth/flat_earth_map.jpg')
+const flatEarthTexture = textureLoader.load('textures/earth/flat_earth_map.jpg')
 flatEarthTexture.colorSpace = THREE.SRGBColorSpace
 
 const topMat = new THREE.MeshPhongMaterial({ map: flatEarthTexture })
@@ -100,19 +105,18 @@ flatEarthGroup.add(domeMesh)
 objects.push(domeMesh)
 flatEarthGroup.rotation.z = THREE.MathUtils.degToRad(15)
 
-const earthTexture = loader.load("textures/earth/earth_map.jpg")
+const earthTexture = textureLoader.load("textures/earth/earth_map.jpg")
 earthTexture.colorSpace = THREE.SRGBColorSpace
-const earthSpecularTexture = loader.load("textures/earth/earth_spec.jpg")
+const earthSpecularTexture = textureLoader.load("textures/earth/earth_spec.jpg")
 earthSpecularTexture.colorSpace = THREE.SRGBColorSpace
-const earthBumpTexture = loader.load("textures/earth/earth_bump.jpg")
+const earthBumpTexture = textureLoader.load("textures/earth/earth_bump.jpg")
 const earthMaterial = new THREE.MeshPhongMaterial({
   map: earthTexture,
   specularMap: earthSpecularTexture,
   bumpMap: earthBumpTexture,
   specular: new THREE.Color('grey'),
   shininess: 10,
-  bumpScale: .1,
-  emissive: 0x102030,
+  bumpScale: .1
 });
 const earthMesh = new THREE.Mesh(sphereGeometry, earthMaterial)
 earthMesh.castShadow = true
@@ -125,9 +129,9 @@ moonOrbit.position.z = 2.5
 earthOrbit.add(moonOrbit)
 objects.push(moonOrbit)
 
-const moonTexture = loader.load("textures/moon/moon_map.jpg")
+const moonTexture = textureLoader.load("textures/moon/moon_map.jpg")
 moonTexture.colorSpace = THREE.SRGBColorSpace
-const moonBumpTexture = loader.load("textures/moon/moon_bump.jpg")
+const moonBumpTexture = textureLoader.load("textures/moon/moon_bump.jpg")
 
 const moonMaterial = new THREE.MeshPhongMaterial({
   map: moonTexture,
@@ -142,6 +146,48 @@ moonMesh.castShadow = true
 moonMesh.scale.set(.5, .5, .5)
 moonOrbit.add(moonMesh)
 objects.push(moonMesh)
+
+
+const sunGrid = new THREE.GridHelper(30, 30, 0xffcc00, 0xffcc00)
+const earthGrid = new THREE.GridHelper(10, 10, 0x00ccff, 0x00ccff)
+const fearthGrid = new THREE.GridHelper(10, 10, 0x00ff00, 0x00ff00)
+const moonGrid = new THREE.GridHelper(3, 3, 0xcccccc, 0xcccccc)
+
+earthOrbit.add(earthGrid)
+flatEarthOrbit.add(fearthGrid)
+moonOrbit.add(moonGrid)
+solarSystem.add(sunGrid)
+
+sunGrid.visible = false
+earthGrid.visible = false
+fearthGrid.visible = false
+moonGrid.visible = false
+
+const gridVisibility = {
+  sunGrid: false,
+  earthGrid: false,
+  fearthGrid: false,
+  moonGrid: false 
+}
+
+const gui = new GUI()
+const gridFolder = gui.addFolder('Orbit Grids')
+gridFolder.add(gridVisibility, 'sunGrid').name('Sun Grid').onChange((value) => {
+  sunGrid.visible = value;
+})
+gridFolder.add(gridVisibility, 'earthGrid').name('Earth Grid').onChange((value) => {
+  earthGrid.visible = value;
+})
+gridFolder.add(gridVisibility, 'fearthGrid').name('Fearth Grid').onChange((value) => {
+  fearthGrid.visible = value;
+})
+gridFolder.add(gridVisibility, 'moonGrid').name('Moon Grid').onChange((value) => {
+  moonGrid.visible = value;
+})
+const lightFolder = gui.addFolder('Scene Lighting');
+lightFolder.add(ambientLight, 'intensity', 0, 5, 0.01).name('Ambient Intensity')
+const sunLightFolder = gui.addFolder('Sun Light')
+sunLightFolder.add(sunLight, 'intensity', 0, 200, 1).name('Sun Intensity')
 
 const stats = new Stats
 stats.showPanel(0)
