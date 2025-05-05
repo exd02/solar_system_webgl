@@ -67,14 +67,44 @@ earthOrbit.position.z = 12.5
 solarSystem.add(earthOrbit)
 objects.push(earthOrbit)
 
+const flatEarthOrbit = new THREE.Object3D()
+flatEarthOrbit.position.z = -12.5
+solarSystem.add(flatEarthOrbit)
+objects.push(flatEarthOrbit)
+
+const flatEarthGroup = new THREE.Object3D()
+flatEarthOrbit.add(flatEarthGroup)
+objects.push(flatEarthGroup)
+
+const flatEarthGeometry = new THREE.CylinderGeometry(1, 1, 0.1, 64, 1, false)
+const flatEarthTexture = loader.load('textures/earth/flat_earth_map.jpg')
+flatEarthTexture.colorSpace = THREE.SRGBColorSpace
+
+const topMat = new THREE.MeshPhongMaterial({ map: flatEarthTexture })
+const sideMat = new THREE.MeshPhongMaterial({ color: 0xFFFFFF }) // borda branca (gelo)
+const bottomMat = new THREE.MeshPhongMaterial({ color: 0x392620 }) // base marrom (terra)
+
+const flatEarthMesh = new THREE.Mesh(flatEarthGeometry, [sideMat, topMat, bottomMat])
+flatEarthGroup.add(flatEarthMesh)
+objects.push(flatEarthMesh)
+
+const domeGeometry = new THREE.SphereGeometry(1.05, 64, 32, 0, Math.PI * 2, 0, Math.PI/2);
+const domeMaterial = new THREE.MeshPhongMaterial({
+  color: 0x88ccff,
+  transparent: true,
+  opacity: 0.2,
+  side: THREE.DoubleSide,
+})
+const domeMesh = new THREE.Mesh(domeGeometry, domeMaterial)
+flatEarthGroup.add(domeMesh)
+objects.push(domeMesh)
+flatEarthGroup.rotation.z = THREE.MathUtils.degToRad(15)
+
 const earthTexture = loader.load("textures/earth/earth_map.jpg")
 earthTexture.colorSpace = THREE.SRGBColorSpace
-
 const earthSpecularTexture = loader.load("textures/earth/earth_spec.jpg")
 earthSpecularTexture.colorSpace = THREE.SRGBColorSpace
-
 const earthBumpTexture = loader.load("textures/earth/earth_bump.jpg")
-
 const earthMaterial = new THREE.MeshPhongMaterial({
   map: earthTexture,
   specularMap: earthSpecularTexture,
@@ -122,7 +152,7 @@ function animate() {
 
   stats.begin()
   objects.forEach( ( obj ) => {
-		obj.rotation.y += 0.003
+		obj.rotation.y += 0.001
 	} );
 
   controls.update()
