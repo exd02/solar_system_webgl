@@ -1,8 +1,10 @@
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/Addons.js'
+import { FlyControls } from 'three/addons/controls/FlyControls.js';
 import Stats from 'stats.js'
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js'
+const clock = new THREE.Clock()
 
 const canvas = document.querySelector('#c')
 const renderer = new THREE.WebGLRenderer({antialias:true, canvas})
@@ -16,9 +18,86 @@ const fov = 40
 const aspect = window.innerWidth / window.innerHeight
 const near = 0.1
 const far = 1000
-const camera = new THREE.PerspectiveCamera(fov, aspect, near, far)
-camera.position.set(0,30,-30)
-camera.lookAt(0,0,0)
+const frustumSize = 20
+let perspectiveCamera = new THREE.PerspectiveCamera(fov, aspect, near, far)
+let orthographicCamera = new THREE.OrthographicCamera(
+  - frustumSize * aspect / 2,
+    frustumSize * aspect / 2,
+    frustumSize / 2,
+  - frustumSize / 2,
+    near, far
+)
+let camera = perspectiveCamera
+
+perspectiveCamera.position.set(0,30,-30)
+perspectiveCamera.lookAt(0,0,0)
+orthographicCamera.position.set(0,30,-30)
+orthographicCamera.lookAt(0,0,0)
+
+// control to move camera around
+let orbitControls = new OrbitControls(camera, renderer.domElement)
+orbitControls.enabled = false
+let flyControls = new FlyControls(camera, renderer.domElement)
+setupControls(orbitControls, flyControls)
+let controls = flyControls
+
+function setupControls(o, f) {
+  o.enableDamping = true
+  o.dampingFactor = 0.1
+  o.enablePan     = true
+
+  f.movementSpeed = 20
+  f.rollSpeed     = 1
+  f.dragToLook    = true 
+}
+
+function resetControls() {
+  const wasOrbit = controls === orbitControls
+
+  orbitControls.dispose()
+  flyControls.dispose()
+
+  orbitControls = new OrbitControls(camera, renderer.domElement)
+  flyControls   = new FlyControls  (camera, renderer.domElement)
+  setupControls(orbitControls, flyControls)
+
+  // reativa apenas o controle que estava ativo
+  if (wasOrbit) {
+    flyControls.enabled   = false
+    controls = orbitControls
+  } else {
+    orbitControls.enabled = false
+    controls = flyControls
+  }
+}
+
+window.addEventListener('keydown', e => {
+  let changed = false
+
+  if (e.key === 'o' && camera !== orthographicCamera) {
+    orthographicCamera.position.copy(perspectiveCamera.position)
+    orthographicCamera.quaternion.copy(perspectiveCamera.quaternion)
+    camera = orthographicCamera
+    changed = true
+  }
+  else if (e.key === 'p' && camera !== perspectiveCamera) {
+    perspectiveCamera.position.copy(orthographicCamera.position)
+    perspectiveCamera.quaternion.copy(orthographicCamera.quaternion)
+    camera = perspectiveCamera
+    changed = true
+  }
+  else if (e.key === 'n') {
+    // só alterna o tipo de controle sem trocar câmera
+    const wasOrbit = controls === orbitControls
+    controls = wasOrbit ? flyControls : orbitControls
+    orbitControls.enabled = !wasOrbit
+    flyControls.enabled   =  wasOrbit
+    return
+  }
+  else return
+
+  if (changed) resetControls() 
+})
 
 const scene = new THREE.Scene()
 const textureLoader = new THREE.TextureLoader()
@@ -31,14 +110,6 @@ scene.add(ambientLight)
 
 renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
-
-// control to move camera around
-const controls = new OrbitControls(camera, renderer.domElement)
-controls.target.set(0,0,0)
-controls.enableDamping = true
-controls.minDistance = 20
-controls.maxDistance = 500
-controls.enablePan = true
 
 // array of objects to get rotated in the animation
 const objects = []
@@ -196,12 +267,14 @@ document.body.appendChild(stats.dom)
 function animate() {
   requestAnimationFrame(animate)
 
+  const delta = clock.getDelta()
+  controls.update(delta)
+
   stats.begin()
   objects.forEach( ( obj ) => {
 		obj.rotation.y += 0.001
 	} );
 
-  controls.update()
   renderer.render(scene, camera)
   stats.end()
 }
