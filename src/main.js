@@ -34,7 +34,6 @@ perspectiveCamera.lookAt(0,0,0)
 orthographicCamera.position.set(0,30,-30)
 orthographicCamera.lookAt(0,0,0)
 
-// control to move camera around
 let orbitControls = new OrbitControls(camera, renderer.domElement)
 orbitControls.enabled = false
 let flyControls = new FlyControls(camera, renderer.domElement)
@@ -61,7 +60,6 @@ function resetControls() {
   flyControls   = new FlyControls  (camera, renderer.domElement)
   setupControls(orbitControls, flyControls)
 
-  // reativa apenas o controle que estava ativo
   if (wasOrbit) {
     flyControls.enabled   = false
     controls = orbitControls
@@ -87,7 +85,7 @@ window.addEventListener('keydown', e => {
     changed = true
   }
   else if (e.key === 'n') {
-    // só alterna o tipo de controle sem trocar câmera
+    // change noclip
     const wasOrbit = controls === orbitControls
     controls = wasOrbit ? flyControls : orbitControls
     orbitControls.enabled = !wasOrbit
